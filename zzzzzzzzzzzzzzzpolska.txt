@@ -1,0 +1,169 @@
+-------ROUTING--------
+router eigrp 1
+network 14.0.0.0
+no auto-summary
+ 
+-------DHCP[z servera]-------
+[Na routerze obok pc'tów]
+int fa0/1 [w strone pc'tów]
+ip helper-address [ip serwera dhcp]
+ 
+-------QOS-------
+[Na routerze obok serwera]
+class-map www
+match protocol http
+match protocol https
+ex
+ 
+class-map poczta
+match protocol smtp
+match protocol pop3
+ex
+ 
+class-map tftp
+match protocol tftp
+ex
+ 
+class-map telnetSSH
+match protocol telnet
+match protocol ssh
+ex
+ 
+class-map komunikaty
+match protocol ip
+match protocol icmp
+ex
+ 
+class-map routing
+match protocol eigrp
+ex
+ 
+class-map dhcp
+match protocol dhcp
+ex
+ 
+class-map dns
+match protocol dns
+ex
+ 
+class-map adresacja
+match protocol ip
+ex
+ 
+class-map przepustowosc
+ex
+ 
+policy-map zasada
+ 
+class www
+set ip dscp af11
+ex
+ 
+class poczta
+set ip dscp af12
+ex
+ 
+class tftp
+set ip dscp af13
+ex
+ 
+class telnetSSH
+set ip dscp af21
+ex
+...
+(wszystkie po kolei klasy w ten sam sposób)
+...
+class przepustowosc
+set ip dscp af41
+ex
+ 
+int fa0/1[w stronę serwera]
+service-policy output zasada
+ 
+[Na routerze obok pc'ta]
+class przep
+ex
+ 
+policy-map przep
+class przep
+bandwidth percent 20
+ex
+ 
+int fa0/1[w stronę pc'tów]
+service-policy output przep
+ex
+ 
+-------sprawdzenie qos'a--------
+do show policy-map interface
+ 
+-------SSH-------
+hostname nazwa_routera
+ip domain-name cisco.com[po prostu jakaś nazwa domeny]
+username nazwa_użytkownika secret hasło
+crypto key generate rsa
+ip ssh version 2
+line vty 0 15
+transport input ssh
+login local
+ 
+------TELNET------
+line vty 0 15
+transport input telnet
+login local
+ 
+------Kopia na konfigutacji routera na TFTP------
+copy startup-config tftp
+(wyskoczy nam komunikat "Address or name of remote host[]?", podajemy ip serwera tftp)
+następnie enter
+ 
+ 
+ 
+ 
+ 
+ 
+-------------dhcp------linux-------------------
+ 
+-----------instalacja--------------
+apt install kea-dhcp4-server
+apt install kea-common
+ 
+-----------
+wget link
+ 
+apt install curl
+ 
+systemctl restart kea-dhcp4-server
+systemctl status kea-dhcp4-server
+nano /etc/network/interfaces
+(zmieniamy dhcp na static)
+	address 14.89.46.10/24
+	gateway 14.89.46.1
+ip route
+nano /etc/kea/kea-dhcp4-server.conf
+ipconfig /release
+ipconfig /renew
+ 
+-------------dns------linux-------------------
+ 
+-----------instalacja--------------
+apt install bind9
+systemctl status named
+systemctl restart named
+nano /etc/bind/named.conf
+nano /etc/bind/named.conf.local
+nano /etc/bind/named.conf.options
+nano /etc/bind/zones/db.example.com (skopiować z /etc/bind/db.local)
+
+
+
+-----dhcp------
+nano /etc/network/interfaces
+(zmieniamy dhcp na static)
+	address 14.89.46.10/24
+	gateway 14.89.46.1
+service networking restart
+apt-get install kea-dhcp4-server
+apt install kea-common
+nano /etc/kea/kea-dhcp4.conf
+systemctl restart kea-dhcp4-server
+systemctl status kea-dhcp4-server
